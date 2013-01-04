@@ -50,9 +50,46 @@ class NicoNico
     end
   end
 
+  def startNicoAlert()
+    @nicoAlertStopFlg = false
+    auth1 = ""
+    RestClient.post \
+      'https://secure.nicovideo.jp/secure/login?site=nicolive_antenna', \
+      {'mail'=>@mail, 'password'=>@pass} {|res,&block|\
+         auth1 = res.to_s
+      }
+    auth1.match(/<ticket>([^0-9]*[0-9]*)<\/ticket>/)
+    sid = $1
+    tmp = RestClient.get \
+      "http://live.nicovideo.jp/api/getalertstatus?ticket=#{sid}"
+    doc = REXML::Document.new tmp
+    sock = TCPSocket.open( \
+       doc.elements['/getalertstatus/ms/addr'].text, \
+       doc.elements['/getalertstatus/ms/port'].text.to_i \
+    )
+    th = doc.elements['/getalertstatus/ms/thread'].text
+    sock.write("<thread thread=\"#{th}\" " + \
+       "version=\"20061206\" res_from=\"-1\"/>\0")
+    buf = ""
+    while 1
+      tmp = sock.gets("\0")
+      break if tmp =~ /\/disconnect/
+      break if @nicoAlertStopFlg
+      tmp.match(/,([lc][vo][0-9]*),/)
+      tmp = $1
+      Proc.new.call(tmp) if ! tmp.nil? and tmp.length >= 3
+    end
+    sock.close
+  end
+
+  def stopNicoAlert()
+     @nicoAlertStopFlg = true
+  end
+
   def getCookies()
     return @cookies
   end
+
   private
   def getVideoCom(id)
     $_ = RestClient.get \
@@ -86,5 +123,3 @@ class NicoNico
   end
 end
 
-nico = NicoNico.new('account@gmail.com','password')
-puts nico.getComment('sm9')
