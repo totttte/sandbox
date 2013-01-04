@@ -77,7 +77,9 @@ class NicoNico
        "version=\"20061206\" res_from=\"-1000\"/>\0")
     buf = ""
     while 1
-      buf = buf + sock.gets("\0")
+      tmp = sock.gets("\0")
+      break if tmp =~ /\/disconnect/
+      buf += tmp.strip
     end
     sock.close
     return buf
@@ -85,4 +87,4 @@ class NicoNico
 end
 
 nico = NicoNico.new('account@gmail.com','password')
-p nico.getComment('sm9')
+puts nico.getComment('sm9')
