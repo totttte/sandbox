@@ -21,6 +21,9 @@ require 'socket'
 # それ以外の場合は動画とみなしてコメントを取得します。
 # 生放送のときは getCommentは長時間returnされないので注意。
 #
+# また、startNicoAlertはblockでcallbackすることによって、
+# 生放送ID(coxxxxやlvxxxx)を取得できます。
+#
 # このライブラリを使用するためには rest-client が必要です。
 # sudo gem install rest-client
 #
@@ -59,9 +62,8 @@ class NicoNico
          auth1 = res.to_s
       }
     auth1.match(/<ticket>([^0-9]*[0-9]*)<\/ticket>/)
-    sid = $1
     tmp = RestClient.get \
-      "http://live.nicovideo.jp/api/getalertstatus?ticket=#{sid}"
+      "http://live.nicovideo.jp/api/getalertstatus?ticket=#{$1}"
     doc = REXML::Document.new tmp
     sock = TCPSocket.open( \
        doc.elements['/getalertstatus/ms/addr'].text, \
@@ -70,14 +72,14 @@ class NicoNico
     th = doc.elements['/getalertstatus/ms/thread'].text
     sock.write("<thread thread=\"#{th}\" " + \
        "version=\"20061206\" res_from=\"-1\"/>\0")
-    buf = ""
+    callback = Proc.new
     while 1
       tmp = sock.gets("\0")
       break if tmp =~ /\/disconnect/
       break if @nicoAlertStopFlg
       tmp.match(/,([lc][vo][0-9]*),/)
       tmp = $1
-      Proc.new.call(tmp) if ! tmp.nil? and tmp.length >= 3
+      callback.call(tmp) if ! tmp.nil? and tmp.length >= 3
     end
     sock.close
   end
