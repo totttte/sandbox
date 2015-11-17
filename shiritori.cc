@@ -19,16 +19,14 @@ bool next(char *s, bool *use, int remain) {
    for(int i = L_KEN - 1; i >= 0; i--) {
       if(use[i]) continue;
       if(s[slen - 1] == KEN[i][2] && s[slen - 2] == KEN[i][1]) {
-         int tmplen = strlen(KEN[i]);
-         if(tmplen == remain)
-            return printf("%s%s\n", s, KEN[i]);
-         else if(tmplen < remain) {
-            char S[150];
-            strcat(strcpy(S, s), KEN[i]);
+         int klen = strlen(KEN[i]);
+         if(klen == remain) return printf("%s%s\n", s, KEN[i]);
+         else if(klen < remain) {
             bool u[L_KEN];
             memcpy(u, use, sizeof(u));
             u[i] = true;
-            if(next(S, u, remain - strlen(KEN[i]))) return true;
+            char S[150];
+            if(next(strcat(strcpy(S, s), KEN[i]), u, remain -klen))return true;
          }
       }
    }
@@ -41,8 +39,7 @@ int main(int c, char **v) {
    for(int i = L_KEN - 1; i >= 0; i--) {
       bool u[L_KEN] = {false};
       u[i] = true;
-      if(next(strcpy(s, KEN[i]), u, 3*atoi(v[1])-strlen(KEN[i])))return 0;
+      if(next(strcpy(s, KEN[i]), u, 3 * atoi(v[1]) - strlen(KEN[i]))) return 0;
    }
    return printf("この組み合わせは見つかりませんでした\n");
 }
-
